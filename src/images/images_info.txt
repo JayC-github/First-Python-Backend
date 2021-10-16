@@ -1,0 +1,8 @@
+This is the image directory for the slackr program.
+
+Images used in the server will be stored in subdirectories
+inside this directory.
+
+Please do not delete this directory or the profile_images subdirectory.
+
+Please do not rename the subdirectories inside this directory.

@@ -1,0 +1,153 @@
+"""re for the system"""
+import re
+#from json import dumps
+#from flask import Flask, request
+import hashlib
+import jwt
+from error import InputError
+#import urllib.request
+
+## file from group
+from server_data_class import Server_data
+#from user_class import User
+#from channel_class import Channel
+#from message_class import Message
+#from react_class import Reacts
+from sessions_class import Sessions
+
+
+# Secret for jwt(JSON Web Tokens) in python
+SECRET = "MERCY"
+
+# return a new token for authenticaiton in users' session
+def generate_token(u_id):
+    global SECRET
+    return jwt.encode({'user_id': u_id}, SECRET, algorithm='HS256').decode('utf-8')
+
+'''
+Given a user's first and last name, email address, and password, create a new account for them and return a new token for authentication in their session. A handle is generated that is the concatentation of a lowercase-only first name and last name. If the concatenation is longer than 20 characters, it is cutoff at 20 characters. If the handle is already taken, you may modify the handle in any way you see fit to make it unique.
+
+Input Error
+- Email entererd is not valid
+- Email address is already being used by another user
+- password entered is less than 6 characters long
+- name first is not between 1-50 characters in length
+- name last is not between 1-50 characters in length
+'''
+
+VALID_EMAIL = r"^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$"
+
+def auth_register(server_data, email, password, name_first, name_last):
+    # check if the email is valid
+    if not re.search(VALID_EMAIL, email):
+        raise InputError("Email enter is invalid")
+    # check if the email address is alreayd being used by another user
+    if Server_data.does_email_exist(email):
+        raise InputError("Email address is alreayd being used by another user")
+    # check if the password entered is less than 6 characters long
+    if len(password) <= 6:
+        raise InputError("Password is too short")
+    # check if name first or name last is empty
+    if not name_first:
+        raise InputError("First name is empty")
+    if not name_last:
+        raise InputError("Last name is empty")
+    # check if name first is not between 1-50 characters in length
+    if len(name_first) > 50:
+        raise InputError("first name is invalid")
+    # check if name last is not between 1-50 characters in length
+    if len(name_last) > 50:
+        raise InputError("last name is invalid")
+    # for the hash_password, handle and permission_id
+    hashed_password = hashlib.sha256(password.encode()).hexdigest()
+
+    # for the global_permission_id
+    # A function user in the database will help --> num_user
+    uid = server_data.num_users()
+    if uid == 0:
+        permission_id = 1
+    else:
+        permission_id = 2
+
+    # set handle here
+    # if longer than 20 characters, handle is cutoff at 20 characters
+    # if handle less than 2, add its user id in the end of the handle
+    handle = (name_first + name_last).lower()
+    handle = handle[:20]
+
+    if len(handle) < 2:
+        handle = handle + str(uid)
+        handle = handle[:20]
+
+    # if same handle is already exist
+    # make handle unique by add user's uid in the front of the handle
+    if server_data.does_handle_exit(handle):
+        handle = str(uid) + handle[:(20-len(str(uid)))]
+
+    # call the new_user fucntion to store in the database,return uid
+    user_id = server_data.new_user(email, hashed_password, \
+        name_first, name_last, handle, permission_id)
+
+    # get the token by uid
+    token = generate_token(user_id)
+
+    # for session part
+    session = server_data.get_sessions_list()
+    session.create_active_session(user_id, token)
+
+    return {'u_id': user_id, 'token': token}
+
+'''
+auth_login
+
+Given a registered users' email and password and generates a valid token for the user to remain authenticated
+
+Input Error
+- Email entererd is not valid
+- Email entered does not belong to a user
+- password is not correct
+
+'''
+
+def auth_login(server_data, email, password):
+    # check if the email is invalid
+    if not re.search(VALID_EMAIL, email):
+        raise InputError("Email enter is invalid")
+
+    # check if the email is belong to a user
+    # if email not belong to a user
+    if not server_data.does_email_exist(email):
+        raise InputError("Email does not belong to a users")
+    # if email belong to a user
+    else:
+        # find the corresponding user's password and compare
+        # password not match
+        user = server_data.get_user_by_email(email)
+
+        if user.password != hashlib.sha256(password.encode()).hexdigest():
+            raise InputError("Email entered is not a user")
+        # password match, return new token
+        else:
+            user_id = user.u_id
+            token = generate_token(user_id)
+
+            # for session part
+            session = server_data.get_sessions_list()
+            session.create_active_session(user_id, token)
+
+            return {'u_id': user_id, 'token': token}
+'''
+auth_logout
+
+Given an active token, invalidates the taken to log the user out. If a valid token is given, and the user is successfully logged out, it returns true, otherwise false.
+
+Access Error
+- Invalid token (logout before login)
+- Double logout
+'''
+def auth_logout(server_data, token):
+    session = server_data.get_sessions_list()
+    if session.is_token_active(token):
+        session.end_active_session(token)
+        return {'is_success': True}
+    return {'is_success': False}

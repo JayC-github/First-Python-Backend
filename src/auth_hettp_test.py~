@@ -1,0 +1,46 @@
+import json
+import urllib
+import flask # needed for urllib.parse
+from server_data_class import Server_data
+from auth import auth_register, auth_login, auth_logout
+
+
+BASE_URL = 'http://127.0.0.1:xxxx'
+
+def reset_http_state():
+    """
+    A helper function to reset the state of the server
+    """
+    
+
+
+
+
+def test_http_login():
+
+	# Reset    
+    response = urllib.request.urlopen(f"{BASE_URL}/login")
+
+    # Get empty
+    queryString = urllib.parse.urlencode({
+        'uc' : False,
+    })
+    payload = json.load(urllib.request.urlopen(f"{BASE_URL}/info?{queryString}"))
+    assert payload['firstName'] == ''
+    assert payload['lastName'] == ''
+
+    # Send name
+    data = json.dumps({
+        'firstName' : 'Hayden',
+        'lastName' : 'Smith',
+    }).encode('utf-8')
+    req = urllib.request.Request(f"{BASE_URL}/set", data=data, headers={'Content-Type': 'application/json'})
+    payload = json.load(urllib.request.urlopen(req))
+
+    assert payload['firstName'] == 'Hayden'
+    assert payload['lastName'] == 'Smith'
+
+    payload = json.load(urllib.request.urlopen(f"{BASE_URL}/info?{queryString}"))
+    assert payload['firstName'] == 'HAYDEN'
+    assert payload['lastName'] == 'SMITH'
+

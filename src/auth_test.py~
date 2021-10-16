@@ -1,0 +1,148 @@
+import pytest
+import re
+from error import InputError, AccessError
+from auth import auth_register, auth_login, auth_logout
+
+"""
+1.tests for auth_register
+
+Input Error
+- Email entererd is not valid
+- Email address is already being used by another user
+- password entered is less than 6 characters long
+- name first is not between 1-50 characters in length
+- name last is not between 1-50 characters in length
+ 
+"""
+# registration success
+def test_register():
+    email = "jay.chen@unsw.edu.au"
+    user = auth_register(email, "abcde123", "Jay", "Chen")
+    user_id = user['u_id']
+    token = user['token']
+          
+    
+# Email entererd is not valid
+def test_register_valid_email():
+    with pytest.raises(InputError) as e:
+        auth_register("jay.chen", "abcde123", "Jay", "Chen")
+
+# Email address is already being used by another user
+def test_register_double():
+    email = "jay.chen@unsw.edu.au"
+    user = auth_register(email, "abcde123", "Jay", "Chen")
+    
+    # try to register by using the same email address
+    with pytest.raises(InputError) as e:
+        auth_register(email, "abcde456", "Jacky", "Chan")
+
+# password entered is less than 6 characters long
+def test_register_short_password():
+    with pytest.raises(InputError) as e:
+        auth_register("jay.chen@unsw.edu.au", "ab12", "Jay", "Chen")
+
+# first name is not between 1-50 characters in length
+def test_register_first_name():
+    with pytest.raises(InputError) as e:
+        auth_register("jay.chen@unsw.edu.au", "abc12", "J" * 51, "Chen")
+
+def test_register_first_name_empty():
+    with pytest.raises(InputError) as e:
+        auth_register("jay.chen@unsw.edu.au", "abc12", "", "Chen")
+
+# last name is not between 1-50 characters in length
+def test_register_last_name():
+    with pytest.raises(InputError) as e:
+        auth_register("jay.chen@unsw.edu.au", "abc12", "Jay", "C" * 51)
+
+def test_register_last_name_empty():
+    with pytest.raises(InputError) as e:
+        auth_register("jay.chen@unsw.edu.au", "abc12", "Jay", "")
+        
+"""
+2.tests for auth_login
+
+Input Error
+- Email entererd is not valid
+- Email entered does not belong to a user
+- password is not correct
+
+"""        
+# login successfully
+def test_login():
+    result1 = auth_register("jay.chen@unsw.edu.au", "abcde123", "Jay", "Chen")
+    u_id1 = result1['u_id']
+    token1 = result1['token']
+    # the registered user login
+    result2 = auth_login("jay.chen@unsw.edu.au", "abcde123")
+    u_id2 = result2['u_id']
+    token2 = result2['token']
+    
+    # the user id should be the same but tokens are unique & different
+    assert u_id1 == u_id2
+    assert token1 != token2
+    
+# Email entered is not a valid email
+def test_login_valid_email():
+    user = auth_register("jay.chen@unsw.edu.au", "abcde123", "Jay", "Chen")
+    with pytest.raises(InputError) as e:
+        auth_login("jay.chen", "abcde123")  
+
+# Email entered does not belong to a user
+def test_login_user_email():
+    user = auth_register("jay.chen@unsw.edu.au", "abcde123", "Jay", "Chen")   
+    # try to login with another radom email
+    with pytest.raises(InputError) as e:
+        auth_login("MercyluvJay@gmail.com", "1234abc")   
+
+# password is not correct
+def test_login_password():
+    user = auth_register("jay.chen@unsw.edu.au", "abcde123", "Jay", "Chen")
+    # try to login with incorrect password
+    with pytest.raises(InputError) as e:
+        auth_login("jay.chen@unsw.edu.au", "2384u2ekjh28")
+"""
+3. tests for auth_logout
+Access Error
+- Invalid token (logout before login)
+- Double logout
+"""
+# logout successfully
+def test_logout():
+    auth_register("jay.chen@unsw.edu.au", "abcde123", "Jay", "Chen")
+    user = auth_login("jay.chen@unsw.edu.au", "abcde123")
+    token = user['token']
+    
+    assert auth_logout("token") == {'is_success': True}
+
+# logout before login (Invalid token)
+def test_logout_before_login():
+    user = auth_register("jay.chen@unsw.edu.au", "abcde123", "Jay", "Chen")
+    user_id = user['u_id']
+    token = user['token']
+    
+    # the token returned by auth_register is different to the one by auth_login
+    assert auth_logout("token") == {'is_success': False}
+    
+    with pytest.raises(AccessError) as e:      
+        auth_logout("token")     
+        
+# double logout
+def test_double_log_out():
+    auth_register("jay.chen@unsw.edu.au", "abcde123", "Jay", "Chen")
+    user = auth_login("jay.chen@unsw.edu.au", "abcde123")
+    token = user['token']
+    auth_logout("token")
+    
+    # already logout, token is invalidate, cannot logout twice
+    assert auth_logout("token") == {'is_success': False}
+    
+    with pytest.raises(AccessError) as e:      
+        auth_logout("token")        
+    
+    
+    
+    
+       
+    
+

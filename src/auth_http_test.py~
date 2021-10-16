@@ -1,0 +1,97 @@
+import json
+import urllib
+import flask # needed for urllib.parse
+#from server_data_class import Server_data
+#from auth import auth_register, auth_login, auth_logout
+
+
+BASE_URL = 'http://127.0.0.1:xxxx'
+
+def reset_http_state():
+    """
+    reset_state_http()
+    A helper function to reset the state of the server
+    """
+    data = {}
+    json_data = json.dumps(data).encode('utf-8')
+    req = urllib.request.Request(f"{BASE_URL}/workspace/reset", data=json_data)
+    urllib.request.urlopen(req)
+
+
+
+def test_http_auth_login():
+	"""
+    Test auth_login functionality
+    Input: JSON - {email, password}
+    output: JSON - {u_id, token}
+	"""
+	reset_http_state()
+	
+	# no input email or password
+	data = json.dumps({
+	    "email": '',
+	    "password": ''
+	}).encode('utf-8')
+	
+	req = urllib.request.Request(f"{BASE_URL}/auth/login", data=data, headers={'Content-Type': 'application/json'})
+    # response = urllib.request.urlopen(req)
+    # payload = json.load(response)
+    payload = json.load(urllib.request.urlopen(req))
+    assert payload['u_id'] == ''
+    assert payload['token'] == ''
+
+    # valid email and password
+    json_data = json.dumps({
+        "email": 'jianjunjchen@gmail.com'
+        "password": '54321'
+    }).encode('utf-8')
+    
+    req = urllib.request.Request(f"{BASE_URL}/auth/login", data=data, headers={'Content-Type': 'application/json'})
+    payload = json.load(urllib.request.urlopen(req))
+
+    assert payload['u_id'] == uid
+    assert payload['token'] == token
+
+def test_http_auth_register():
+	"""
+    Test auth_register functionality
+    Input: JSON - {email, password, name_first, name_last}
+    Output: JSON - {u_id, token}
+	"""
+	reset_http_state()
+	
+	# no input email or password
+	data = json.dumps({
+	    "email": '',
+	    "password": '',
+	    "name_first": '',
+	    "name_last": ''
+	}).encode('utf-8')
+	
+	req = urllib.request.Request(f"{BASE_URL}/auth/register", data=data, headers={'Content-Type': 'application/json'})
+    # response = urllib.request.urlopen(req)
+    # payload = json.load(response)
+    payload = json.load(urllib.request.urlopen(req))
+    assert payload['u_id'] == ''
+    assert payload['token'] == ''
+
+def test_http_auth_logout():
+    	"""
+    Test auth_register functionality
+    Input: JSON - {token}
+    Output: JSON - {is_success}
+	"""
+	reset_http_state()
+	
+	# no input email or password
+	data = json.dumps({
+	    "token": ""
+	}).encode('utf-8')
+	
+	req = urllib.request.Request(f"{BASE_URL}/auth/logout", data=data, headers={'Content-Type': 'application/json'})
+    # response = urllib.request.urlopen(req)
+    # payload = json.load(response)
+    payload = json.load(urllib.request.urlopen(req))
+    assert payload['is_success'] == False 
+
+

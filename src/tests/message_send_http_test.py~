@@ -1,0 +1,47 @@
+'''
+Test file for server server.py 
+
+This file run http testing for the message_send function
+'''
+import json
+import urllib.request
+from server_data_class import Server_data
+from message import message_send, message_edit, message_remove, message_react, message_pin
+
+BASE_URL = "http://127.0.0.1:8080"
+
+# Will need a server set function 
+
+
+def test_message_send():
+    ''' Tests message send functionality '''
+
+    # Needs to have server data set before running this 
+    jsondata_send = json.dumps({
+        "token": token,
+        "channel_id": channel_id,
+        "message": message_content
+    }).encode('utf-8')
+    req = urllib.request.Request(f"{BASE_URL}/message/send", data=jsondata_send, method='POST', headers={"Content-Type": "application/json"})
+    response = urllib.request.urlopen(req)
+    payload_send = json.load(response)
+    message_id = payload["message_id"]
+
+    jsondata_check = json.dumps({
+        "token": token,
+        "query_str": message_content
+    }).encode('utf-8')
+    req = urllib.request.Request(f"{BASE_URL}/search", data=jsondata_check, method='GET', headers={"Content-Type": "application/json"})
+
+    response = urllib.request.urlopen(req)
+    payload_search = json.load(response)
+
+    #Check if message search finds the message and it has the appropriate ID and contents
+    assert [msg["message"] for msg in payload["messages"] if msg["message_id"] == message_id] == [message_content]
+
+
+def test_message_send_long():
+    ''' Test for when message is longer than 1000 characters '''
+
+def test_message_send_edgecases():
+    ''' Testf or when the authorised user has not joined the channel they are trying to post to '''

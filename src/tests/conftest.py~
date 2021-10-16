@@ -1,0 +1,200 @@
+import pytest
+#import auth as auth
+import channel as channel
+import channels as channels
+import message as message
+import other as other
+import user as user
+
+
+'''
+Dataset 1 - contains 5 users
+'''
+def data_set_one():
+    userList1 = [{
+        "email" : "richard@gmail.com",
+        "password" : "12345333",
+        "name_first" : "Richard",
+        "name_last" :  "Park",
+    }, {
+        "email" : "kevin@gmail.com",
+        "password" : "099401010",
+        "name_first" : "Kevin",
+        "name_last" :  "Seu",
+    }, {
+        "email" : "steven@gmail.com",
+        "password" : "312214141",
+        "name_first" : "Steven",
+        "name_last" :  "Yang",
+    }, {
+        "email" : "jay@gmail.com",
+        "password" : "10003DDfe",
+        "name_first" : "Jay",
+        "name_last" :  "Chen",
+    }, {
+        "email" : "robert@gmail.com",
+        "password" : "jfkw22131",
+        "name_first" : "Robert",
+        "name_last" :  "Teoh",
+    }]
+    
+    return userList1
+    
+    
+
+def data_set_channels():
+    channelList = [{
+        "name" : "COMP1531",
+        "is_public" : True,
+    }, {
+        "name" : "ENG1001",
+        "is_public" : False,
+    }, {
+        "name" : "COMP3331",
+        "is_public" : True,
+    }, {
+        "name" : "COMP3211",
+        "is_public" : True,
+    }, {
+        "name" : "ADAD1010",
+        "is_public" : False,
+    }, {
+        "name" : "COMP2511",
+        "is_public" : True,
+    }]
+    
+    return channelList
+
+
+
+def register_users(userListIn):
+    userList = userListIn    
+    for user in userList:
+        #print (user["email"])
+        userToken = auth.auth_register(user["email"], user["password"], user["name_first"], user["name_last"])
+        user["u_id"] = userToken["u_id"]
+        user["token"] = userToken["token"]
+        
+    return userList
+
+
+# The user list is supposed to already contain the tokens
+def register_channels(userListIn, channelListIn):
+    userList = userListIn
+    channelList = channelListIn
+    pos = 0
+    
+    for user in userList:
+        channelInfo = channelList[pos]
+        channelID = channels.channels_create(user["token"], channelInfo["name"], channelInfo["is_public"])
+        
+        # add channel ID into the channel infos
+        channelInfo["channel_id"] = channelID["channel_id"]
+        
+        # import the infos into user
+        # Because no channel exists yet, we are hard coding the channel initialization into user
+        user["channels"] = []
+        user["channels"].append(channelInfo)
+        
+        pos += 1
+        
+    # add one extra channel to the first user
+    channelInfo = channelList[pos]
+    channelID = channels.channels_create(user["token"], channelInfo["name"], channelInfo["is_public"])
+    channelInfo["channel_id"] = channelID["channel_id"]
+    
+    userList[0]["channels"].append(channelInfo)
+        
+    return userList
+        
+        
+
+'''
+Python fixture for auth tests
+Creates a list of 5 registered users infos stored in an dictionary using data_set_one() above.
+Each of the user's email, password, name_first, name_last were pased into the auth_register function to obtain the valid u_id and token. Stored in key "u_id" and "token".
+After calling the fixture, the program will contain 5 registered user with each of their active tokens and u_ids for testing
+    
+structure:
+    auth_fixture (array of dics)
+        for each user
+        - email
+        - password
+        - name_first
+        - name_last
+        - u_id
+        - token
+    
+Usage:
+    def test_*****(auth_fixture):
+        richard_token = auth_fixture[0]["token"]
+    
+'''
+    
+'''
+auth_fixture can also be used to initialize the tests for user functions, as it only requires users 
+'''
+ 
+@pytest.fixture
+def auth_fixture():
+    userList = register_users(data_set_one())   
+    return userList
+
+
+
+'''
+Python fixture for channels tests
+Creates a list of 5 registered users infos stored in an dictionary using data_set_one() above.
+    
+Each of the user's email, password, name_first, name_last were pased into the auth_register function to obtain the valid u_id and token. Stored in key "u_id" and "token".
+    
+The channels_create function is then called so that each user then have 1 channel, either private or public and the first person (richard) has 2 channels
+
+After calling the fixture, the program will contain 5 registered user with each of their active tokens and u_ids for testing
+    
+    
+structure:
+    channels_fixture (array of dics)
+        for each user
+        - email
+        - password
+        - name_first
+        - name_last
+        - u_id
+        - token
+        - channels (array of dics)
+            for each channel:
+            - name (channel)
+            - is_public
+            - channel_id
+       
+        
+    
+
+Usage:
+    def test_*****(channels_fixture):
+        richard_token = auth_fixture[0]["token"]
+    
+'''
+    
+@pytest.fixture
+def channels_fixture():
+    userList = register_channels(register_users(data_set_one()), data_set_channels())
+    return userList
+        
+    
+
+'''
+if __name__ == "__main__":
+    
+    dataTest = register_channels(register_users(data_set_one()), data_set_channels())
+    for data in dataTest:
+        print (data)
+        
+   
+    dataTest = data_set_channels()
+    for data in dataTest:
+        if not data["is_public"]:
+            print (data) 
+    
+'''
