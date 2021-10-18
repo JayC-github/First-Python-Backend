@@ -1,0 +1,30 @@
+#The line number(s) of the issue.
+#Why it's a problem
+#How to fix the problem
+
+
+1.  line 13
+    kiss:keep it simple and stupid
+    replace ceil(radom) with randint
+    remove the from math import ceil
+
+2.  line 12, 16, 19
+    kiss
+    how to fix:replace all the range(0, x) to range(x)    
+    
+3.  line 35, 37...
+    dry:dont repeat yourself
+    if len(count) == 1
+    if len(count) == 2
+    if len(count) == 3
+    elif..elfif..elif
+    
+    how to fix:can use a map or dictionary to fix it
+    
+4.  line 16 and 25 use the same function
+    dry: don't repeat yourself    
+        
+    how to fix: make it a seperate function    
+    eg. def print_dice(dice):    
+            for i in range(0,5):
+            print(f"{i}: {dice[i]}")
